@@ -18,41 +18,28 @@ from time import strftime, gmtime, sleep
 
 from MySerial import MySerial
 from CSSF_UI import Ui_MainWindow
-
-class graphicsItem (QtGui.QGraphicsItem):
-    def __init__ (self):
-        super(graphicsItem, self).__init__()
-        self.rectF = QtCore.QRectF(0,0,3,3)
-    def boundingRect (self):
-        return self.rectF
-    def paint (self, painter=None, style=None, widget=None):
-        painter.fillRect(self.rectF, QtCore.Qt.red)
-
-class graphicsScene (QtGui.QGraphicsScene):
-    def __init__ (self, parent=None):
-        super(graphicsScene, self).__init__ (parent)
-
-    def mousePressEvent(self, event):
-        super(graphicsScene, self).mousePressEvent(event)
-        item = graphicsItem()
-        position = QtCore.QPointF(event.scenePos()) - item.rectF.center()
-        item.setPos(position.x() , position.y())
-        self.addItem(item)
-
+from TouchPad import FOV_view
 class Widget(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self.scene = FOV_view()
+        self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
+
+
         self.view = self.ui.graphicsView_axis
-        self.scene = graphicsScene(self)
+        self.view.setScene(self.scene)
+        # self.view.setCacheMode(QtGui.QGraphicsView.CacheBackground)
+        self.view.setViewportUpdateMode(QtGui.QGraphicsView.BoundingRectViewportUpdate)
+        self.view.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.view.setTransformationAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
+        self.view.setResizeAnchor(QtGui.QGraphicsView.AnchorViewCenter)
+        self.view.scale(1, 1)
+        self.view.setMinimumSize(200, 200)
 
-        self.view.setScene (self.scene)
 
-        # factor = 1
-        # self.scene.setSceneRect(0, 0, self.width * factor, self.height * factor)
-        # self.view.setMinimumSize(self.width, self.height)
 
         # 通过程序初始化界面信息
         self.serial = MySerial()
@@ -161,6 +148,8 @@ class Widget(QtGui.QMainWindow):
 
     def Search(self):
         # 伺服系统搜索
+        print self.scene.centerNode.x(),self.scene.centerNode.y()
+        print self.scene.FOV_box.x(),self.scene.FOV_box.y()
         self.cmd_dat[3] = 0x33
         self.cmd = "Search"
         self.cmd_send()
@@ -214,6 +203,7 @@ class Widget(QtGui.QMainWindow):
 
     def RCV_customer(self):
         # 读取队列,对数据进行解析
+       
         rawdat = ''
         while self.dat_queue.qsize() > 0:
             rawdat = rawdat + self.dat_queue.get()
@@ -294,7 +284,7 @@ class Widget(QtGui.QMainWindow):
     def HelpAbout(self):
         QtGui.QMessageBox.about(self, u"伺服控制组合性能测试程序",
                                 u"""<b>伺服控制组合性能测试程序</b>
-                                <p>Copyright &copy; 2015 北京华航无线电测量研究所
+                                <p>Copyright &copy; 2015 北京无线电测量研究所
                                 <p>该程序用伺服系统定位，搜索，跟踪控制测试。
                                 <p> """)
 
